@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>SevaSetu — Bridging Voices, Building India</title>
+<meta name="description" content="SevaSetu: multilingual AI platform turning citizen voices — voice, text and photos in any Indian language — into prioritized development projects for national policymakers. A Digital Public Good prototype." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌉</text></svg>" />
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root{--navy:#17324D;--saffron:#E58A26;--muted:#536273;--line:#D9E0E7;--bg:#F7F8FA;--ok:#287A53;--soft:#EEF3F8}
+  body{background:var(--bg);color:var(--navy);font-family:-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans Devanagari","Noto Sans Tamil","Noto Sans Bengali",sans-serif}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 2px rgba(23,50,77,.05)}
+  .btn{border-radius:10px;font-weight:600;padding:.55rem 1rem;font-size:.85rem;border:1px solid transparent;cursor:pointer;transition:.15s}
+  .btn-primary{background:var(--navy);color:#fff}.btn-primary:hover{background:#0F2438}
+  .btn-outline{background:#fff;border-color:var(--navy);color:var(--navy)}.btn-outline:hover{background:var(--soft)}
+  .btn-saffron{background:var(--saffron);color:#fff}.btn-saffron:hover{background:#C9761B}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .input{border:1px solid var(--line);border-radius:10px;padding:.6rem .8rem;width:100%;background:#fff;font-size:.9rem;color:var(--navy)}
+  .input:focus{outline:2px solid #BBD0E4;border-color:var(--navy)}
+  .chip{display:inline-flex;align-items:center;gap:.3rem;border-radius:999px;padding:.2rem .6rem;font-size:.72rem;font-weight:600}
+  .tile{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:.55rem .5rem;text-align:center;cursor:pointer;font-size:.75rem;font-weight:600;transition:.15s}
+  .tile:hover{border-color:var(--navy)}
+  .tile.on{border-color:var(--navy);background:var(--soft)}
+  .kpi{background:#fff;border:1px solid var(--line);border-top:3px solid var(--saffron);border-radius:12px;padding:.9rem 1rem}
+  .kpi b{font-size:1.5rem;display:block}
+  .tab-on{background:var(--soft);border:1px solid var(--navy);color:var(--navy)}
+  .tab-off{color:var(--muted)}
+  .rec-on{background:#B91C1C!important;color:#fff!important}
+  .leaflet-container{border-radius:12px;z-index:0;font-family:inherit}
+  .clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .fade-in{animation:fi .3s ease-out}@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  .spin{animation:sp 1s linear infinite}@keyframes sp{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body class="min-h-screen">
+
+<!-- ============ HEADER ============ -->
+<header class="sticky top-0 z-[1000] border-b border-[#D9E0E7] bg-white/95 backdrop-blur">
+  <div class="max-w-6xl mx-auto px-6 py-3.5 flex items-center justify-between flex-wrap gap-2">
+    <a href="#" onclick="switchView('citizen');return false;" class="flex items-center gap-2">
+      <img id="logo-img" src="logo.png" alt="SevaSetu" class="h-10 w-10 object-contain" onerror="this.style.display='none';document.getElementById('logo-svg').style.display='inline-block'">
+      <svg id="logo-svg" viewBox="0 0 120 110" class="h-10 w-10" style="display:none" role="img" aria-label="SevaSetu">
+        <path d="M78 16 A34 34 0 0 1 104 42" fill="none" stroke="#E58A26" stroke-width="7" stroke-linecap="round"/>
+        <path d="M88 8 A46 46 0 0 1 112 32" fill="none" stroke="#1E3A6E" stroke-width="7" stroke-linecap="round"/>
+        <path d="M8 72 A56 56 0 0 1 58 20" fill="none" stroke="#E58A26" stroke-width="10" stroke-linecap="round"/>
+        <path d="M18 84 A68 68 0 0 1 76 12" fill="none" stroke="#1E3A6E" stroke-width="10" stroke-linecap="round"/>
+        <path d="M56 46 C60 42 70 42 75 46 C80 50 82 56 79 62 C75 71 68 82 62 92 C60 95 58 97 57 98 C55 94 51 86 48 78 C45 70 48 58 56 46 Z" fill="#C9CFD6"/>
+        <circle cx="52" cy="34" r="6" fill="#1E3A6E"/><circle cx="64" cy="29" r="7" fill="#1E3A6E"/><circle cx="76" cy="34" r="6" fill="#1E3A6E"/>
+        <path d="M42 56 C42 46 47 42 52 42 C57 42 62 46 62 56 Z" fill="#1E3A6E"/>
+        <path d="M55 52 C55 40 60 36 64 36 C68 36 73 40 73 52 Z" fill="#1E3A6E"/>
+        <path d="M67 56 C67 46 72 42 76 42 C81 42 86 46 86 56 Z" fill="#1E3A6E"/>
+      </svg>
+      <span class="text-2xl font-bold tracking-tight">Seva<span class="text-[#E58A26]">Setu</span></span>
+      <span class="hidden sm:inline text-[11px] font-semibold text-[#536273]">Bridging Voices, Building India</span>
+    </a>
+    <nav class="flex items-center gap-2 text-sm">
+      <button id="tab-citizen" data-i18n="tabCitizen" onclick="switchView('citizen')" class="btn tab-on">Citizen Portal</button>
+      <button id="tab-policy" data-i18n="tabPolicy" onclick="switchView('policy')" class="btn tab-off">Policy Dashboard</button>
+      <button onclick="openSettings()" title="Settings" class="btn btn-outline px-2.5">⚙️</button>
+    </nav>
+  </div>
+  <div class="max-w-6xl mx-auto px-6 pb-3 flex items-center gap-2 flex-wrap">
+    <span data-i18n="appLang" class="text-xs font-semibold text-[#536273] mr-1">🌐 App language</span>
+    <div id="ui-langs" class="flex flex-wrap gap-2"></div>
+    <span id="fb-badge" class="chip hidden bg-[#E7F4EC] text-[#287A53]">☁️ Cloud sync on</span>
+  </div>
+</header>
+
+<!-- ============ CITIZEN VIEW ============ -->
+<main id="view-citizen" class="max-w-3xl mx-auto px-6 py-8 space-y-5">
+  <div id="key-banner" class="hidden card px-4 py-3 text-sm text-[#8A5A11] bg-[#FFF8EC] border-[#F0D9AE] flex flex-wrap items-center gap-2">
+    <span data-i18n="demoBanner">Demo mode: rule-based extraction is active (no AI key). Add a free Gemini API key for full multilingual AI intake.</span>
+    <button onclick="openSettings()" class="underline font-semibold">Add key ⚙️</button>
+  </div>
+
+  <section class="card p-6 fade-in">
+    <h1 data-i18n="heroTitle" class="text-2xl font-bold mb-1">Raise your voice for your community</h1>
+    <p data-i18n="heroSub" class="text-sm text-[#536273] mb-2">Speak, type or photograph a development request — water, roads, health, power, flood safety… The AI understands any Indian language and routes it to national planners.</p>
+    <p id="hero-stats" class="text-xs font-semibold text-[#E58A26] mb-4"></p>
+
+    <p data-i18n="catHint" class="text-xs font-semibold text-[#536273] mb-2">What is this about? (tap a tile — it guides the AI)</p>
+    <div id="cat-tiles" class="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-4"></div>
+
+    <textarea id="txt" rows="3" class="input mb-3" data-i18n-ph="txtPh" placeholder="Describe the problem in your language… e.g. हमारे गाँव में पानी की टंकी सूखी है"></textarea>
+
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <button id="rec-btn" onclick="toggleRec()" class="btn btn-outline">🎙️ <span id="rec-label" data-i18n="btnRec">Record</span></button>
+      <span id="rec-time" class="text-xs font-semibold text-[#536273]"></span>
+      <label class="btn btn-outline cursor-pointer">📷 <span data-i18n="btnPhoto">Photo</span>
+        <input id="photo" type="file" accept="image/*" class="hidden" onchange="onPhoto(event)">
+      </label>
+      <button onclick="useGps()" class="btn btn-outline">📍 <span data-i18n="btnLoc">Use my location</span></button>
+    </div>
+    <div id="attach-row" class="flex flex-wrap items-center gap-2 mb-3"></div>
+
+    <button id="submit-btn" onclick="submitReport()" class="btn btn-primary w-full py-3 text-base">➤ <span data-i18n="btnSubmit">Submit to national planners</span></button>
+  </section>
+
+  <section id="result" class="hidden"></section>
+
+  <section class="card p-5">
+    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <h2 data-i18n="recentTitle" class="font-bold">📋 Latest citizen requests</h2>
+      <button id="filter-clear" onclick="clearFilter()" class="chip hidden bg-[#EEF3F8] text-[#17324D]">✕ <span data-i18n="filterClear">Clear filter</span></button>
+    </div>
+    <div id="recent" class="space-y-3"></div>
+  </section>
+
+  <section class="card p-5">
+    <details>
+      <summary data-i18n="aboutT" class="cursor-pointer font-semibold">ℹ️ About SevaSetu — how it works &amp; data sources</summary>
+      <div class="mt-4 space-y-3 text-sm text-[#536273]">
+        <p><b class="text-[#17324D]">How it works:</b> Citizens submit development requests by voice, text or photo in any Indian language. Google Gemini transcribes, detects the language, translates, classifies category &amp; urgency (with a reason), geolocates the district and scores sentiment. Reports aggregate into district hotspots via a transparent composite index, and Gemini writes ranked, scheme-mapped project recommendations for national policymakers.</p>
+        <p><b class="text-[#17324D]">Priority formula:</b> 40% demand volume + 20% urgency + 20% state infrastructure-deficit proxy + 10% 24-hour momentum + 10% population equity. Every component is visible in the dashboard — fully auditable.</p>
+        <p><b class="text-[#17324D]">Data sources:</b> Request themes modeled on public grievance patterns (data.gov.in, CPGRAMS); infrastructure-deficit proxies based on NITI Aayog SDG India Index; district populations from Census of India 2011. Demo records are synthetic; no personal data is stored.</p>
+        <p><b class="text-[#17324D]">Digital Public Good principles:</b> open &amp; auditable, privacy-first (no PII), multilingual &amp; voice-first (22-language vision), scalable state-by-state via configuration. <b>Google stack:</b> Gemini (intake, vision, recommendations) · Google Maps (hotspot map) · Firebase Firestore (cloud backend) · Google Cloud hosting.</p>
+      </div>
+    </details>
+  </section>
+</main>
+
+<!-- ============ POLICY VIEW ============ -->
+<main id="view-policy" class="max-w-6xl mx-auto px-6 py-8 space-y-5 hidden">
+  <div class="flex items-center justify-between flex-wrap gap-2">
+    <h1 data-i18n="policyTitle" class="text-xl font-bold">🏛️ National Development Demand Dashboard</h1>
+    <div class="flex flex-wrap gap-2">
+      <button onclick="simulate()" class="btn btn-saffron" data-i18n="btnSimulate">⚡ Simulate live reports</button>
+      <button onclick="refreshAI()" class="btn btn-outline" data-i18n="btnRefresh">↻ Refresh AI</button>
+      <button onclick="resetData()" class="btn btn-outline" data-i18n="btnReset">↺ Reset demo data</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+    <div class="kpi"><b id="kpi-total">0</b><span data-i18n="kpiTotal" class="text-xs text-[#536273]">Total requests</span></div>
+    <div class="kpi"><b id="kpi-urgent">0</b><span data-i18n="kpiUrgent" class="text-xs text-[#536273]">High / critical</span></div>
+    <div class="kpi"><b id="kpi-districts">0</b><span data-i18n="kpiDistricts" class="text-xs text-[#536273]">Districts covered</span></div>
+    <div class="kpi"><b id="kpi-langs">0</b><span data-i18n="kpiLangs" class="text-xs text-[#536273]">Languages detected</span></div>
+    <div class="kpi"><b id="kpi-resolved">0</b><span data-i18n="kpiResolved" class="text-xs text-[#536273]">Marked resolved</span></div>
+  </div>
+
+  <section class="card p-5">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-1">
+      <h2 data-i18n="mapTitle" class="font-bold">🗺️ Demand hotspots</h2>
+      <div class="flex gap-2">
+        <button id="ms-map" onclick="setMapStyle('map')" class="btn btn-outline px-3 py-1 text-xs">Map</button>
+        <button id="ms-sat" onclick="setMapStyle('satellite')" class="btn btn-outline px-3 py-1 text-xs">Satellite</button>
+      </div>
+    </div>
+    <p data-i18n="mapSub" class="text-xs text-[#536273] mb-3">Marker size = petition volume · color = urgent share (red &gt; 50%, orange &gt; 25%). With a Google Maps key this is real Google Maps; otherwise keyless Esri satellite.</p>
+    <div id="map-google" class="hidden rounded-xl" style="height:340px"></div>
+    <div id="map-leaflet" class="rounded-xl" style="height:340px"></div>
+  </section>
+
+  <section class="card p-5">
+    <h2 data-i18n="prioTitle" class="font-bold mb-1">📊 Composite priority index — fully auditable</h2>
+    <p data-i18n="prioSub" class="text-xs text-[#536273] mb-3">Score = 40% demand + 20% urgency + 20% state infra-deficit proxy (NITI SDG-based) + 10% 24h momentum + 10% population equity</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead><tr class="text-left text-xs text-[#536273] border-b border-[#D9E0E7]">
+          <th class="py-2 pr-3" data-i18n="thDistrict">District</th>
+          <th class="py-2 pr-3" data-i18n="thState">State</th>
+          <th class="py-2 pr-3" data-i18n="thTopCat">Top demand</th>
+          <th class="py-2 pr-3" data-i18n="thVol">Requests</th>
+          <th class="py-2 pr-3" data-i18n="thUrg">Urgent %</th>
+          <th class="py-2" data-i18n="thScore">Priority score</th>
+        </tr></thead>
+        <tbody id="prio-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card p-5">
+    <h2 data-i18n="projTitle" class="font-bold mb-3">🎯 AI-recommended priority projects</h2>
+    <div id="projects" class="grid sm:grid-cols-2 gap-3"></div>
+  </section>
+
+  <section class="card p-5 border-l-4 border-l-[#E58A26]">
+    <h2 data-i18n="briefTitle" class="font-bold mb-2">🧠 AI Executive Brief</h2>
+    <p id="brief" class="text-sm text-[#536273] leading-relaxed">…</p>
+  </section>
+</main>
+
+<footer class="max-w-6xl mx-auto px-6 py-8 text-center text-xs text-[#536273]">
+  SevaSetu · Bridging Voices, Building India · Digital Public Good prototype · Built with Google Gemini, Google Maps &amp; Firebase
+</footer>
+
+<!-- ============ SETTINGS MODAL ============ -->
+<div id="settings" class="hidden fixed inset-0 z-[2000] bg-[#17324D]/40 flex items-center justify-center p-4">
+  <div class="card p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <h2 class="font-bold text-lg mb-1">⚙️ Settings</h2>
+    <p class="text-xs text-[#536273] mb-4">Keys are stored only in this browser (demo architecture). Use disposable keys.</p>
+
+    <label class="text-xs font-semibold">Gemini API key — <a class="underline text-[#E58A26]" target="_blank" href="https://aistudio.google.com/apikey">get free key</a></label>
+    <input id="set-gemini" class="input mb-3" placeholder="AIza…">
+
+    <label class="text-xs font-semibold">Google Maps key — <a class="underline text-[#E58A26]" target="_blank" href="https://developers.google.com/maps/documentation/javascript/demo-key">free Maps Demo Key (no billing)</a></label>
+    <input id="set-maps" class="input mb-3" placeholder="AIza… (optional)">
+
+    <details class="mb-3">
+      <summary class="cursor-pointer text-xs font-semibold text-[#17324D]">☁️ Firebase backend (optional — cloud sync, free Spark plan)</summary>
+      <p class="text-xs text-[#536273] my-2">Create a project at console.firebase.google.com → enable <b>Firestore</b> (test mode) + <b>Anonymous Auth</b> → Web app config below.</p>
+      <input id="set-fb-apikey" class="input mb-2" placeholder="FIREBASE_API_KEY (apiKey)">
+      <input id="set-fb-authdomain" class="input mb-2" placeholder="FIREBASE_AUTH_DOMAIN (authDomain)">
+      <input id="set-fb-projectid" class="input mb-2" placeholder="FIREBASE_PROJECT_ID (projectId)">
+      <input id="set-fb-storage" class="input mb-2" placeholder="FIREBASE_STORAGE_BUCKET (storageBucket)">
+      <input id="set-fb-sender" class="input mb-2" placeholder="FIREBASE_MESSAGING_SENDER_ID (messagingSenderId)">
+      <input id="set-fb-appid" class="input mb-2" placeholder="FIREBASE_APP_ID (appId)">
+    </details>
+
+    <div class="flex gap-2">
+      <button onclick="saveSettings()" class="btn btn-primary flex-1">Save</button>
+      <button onclick="closeSettings()" class="btn btn-outline flex-1">Close</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 z-[3000] bg-[#17324D] text-white text-sm px-4 py-2.5 rounded-xl shadow-lg"></div>
+
+<script>
+/* ================= CONSTANTS ================= */
+const LS_REPORTS="sevasetu_reports_v2", LS_CFG="sevasetu_cfg_v2";
+const MAX_SECONDS=120, PAYLOAD_MAX=14000000;
+const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.7-flash","gemini-3.6-flash","gemini-3.5-flash","gemini-3.5-flash-lite","gemini-flash-latest","gemini-2.5-flash"];
+const CATS={
+  water:{n:"Water",i:"💧",c:"#2563EB"}, roads:{n:"Roads",i:"🛣️",c:"#B45309"},
+  healthcare:{n:"Healthcare",i:"🏥",c:"#DC2626"}, power:{n:"Power",i:"⚡",c:"#CA8A04"},
+  education:{n:"Education",i:"🏫",c:"#7C3AED"}, sanitation:{n:"Sanitation",i:"🚻",c:"#0D9488"},
+  housing:{n:"Housing",i:"🏠",c:"#DB2777"}, connectivity:{n:"Connectivity",i:"📶",c:"#4F46E5"},
+  flood_resilience:{n:"Flood safety",i:"🌊",c:"#0891B2"}, agriculture:{n:"Agriculture",i:"🌾",c:"#16A34A"}
+};
+const SCHEMES={water:"Jal Jeevan Mission",roads:"PMGSY-IV",healthcare:"Ayushman Bharat",power:"RDSS",education:"Samagra Shiksha",sanitation:"Swachh Bharat Mission (G)",housing:"PM Awas Yojana (G)",connectivity:"BharatNet",flood_resilience:"Flood Management Programme",agriculture:"PM-KISAN / PMFBY"};
+const MINISTRIES={water:"Ministry of Jal Shakti",roads:"Ministry of Rural Development",healthcare:"Ministry of Health & Family Welfare",power:"Ministry of Power",education:"Ministry of Education",sanitation:"Ministry of Jal Shakti",housing:"Ministry of Housing & Urban Affairs",connectivity:"Ministry of Communications",flood_resilience:"Ministry of Jal Shakti",agriculture:"Ministry of Agriculture & Farmers Welfare"};
+const STATE_DEFICIT={"Uttar Pradesh":78,"Bihar":85,"Jharkhand":80,"Odisha":72,"Madhya Pradesh":68,"Rajasthan":66,"Assam":70,"West Bengal":55,"Maharashtra":40,"Gujarat":38,"Karnataka":42,"Tamil Nadu":35,"Kerala":28,"Telangana":40,"Andhra Pradesh":45,"Chhattisgarh":74};
+const DISTRICTS={
+ Sitapur:{s:"Uttar Pradesh",lat:27.57,lng:80.68,p:44.8},Bahraich:{s:"Uttar Pradesh",lat:27.75,lng:81.60,p:34.9},
+ Shravasti:{s:"Uttar Pradesh",lat:27.51,lng:81.84,p:11.1},Chitrakoot:{s:"Uttar Pradesh",lat:25.20,lng:80.87,p:9.9},
+ Varanasi:{s:"Uttar Pradesh",lat:25.32,lng:82.97,p:36.8},Patna:{s:"Bihar",lat:25.59,lng:85.14,p:58.4},
+ Muzaffarpur:{s:"Bihar",lat:26.12,lng:85.39,p:48.0},Gaya:{s:"Bihar",lat:24.80,lng:85.00,p:43.9},
+ Araria:{s:"Bihar",lat:26.15,lng:87.52,p:28.1},Sheohar:{s:"Bihar",lat:26.52,lng:85.29,p:6.6},
+ Ranchi:{s:"Jharkhand",lat:23.34,lng:85.31,p:29.1},Dumka:{s:"Jharkhand",lat:24.27,lng:87.25,p:13.2},
+ Latehar:{s:"Jharkhand",lat:23.74,lng:84.50,p:7.3},Chatra:{s:"Jharkhand",lat:24.21,lng:84.87,p:10.4},
+ Khunti:{s:"Jharkhand",lat:23.08,lng:85.28,p:5.3},Sambalpur:{s:"Odisha",lat:21.47,lng:83.97,p:10.4},
+ Koraput:{s:"Odisha",lat:18.81,lng:82.71,p:13.8},Khordha:{s:"Odisha",lat:20.30,lng:85.82,p:22.5},
+ Kandhamal:{s:"Odisha",lat:20.47,lng:84.23,p:7.3},Malkangiri:{s:"Odisha",lat:18.35,lng:81.88,p:6.1},
+ Mayurbhanj:{s:"Odisha",lat:21.93,lng:86.73,p:25.2},Rayagada:{s:"Odisha",lat:19.17,lng:83.42,p:9.7},
+ Nabarangpur:{s:"Odisha",lat:19.23,lng:82.55,p:12.2},Shivpuri:{s:"Madhya Pradesh",lat:25.43,lng:77.65,p:17.3},
+ Betul:{s:"Madhya Pradesh",lat:21.90,lng:77.90,p:15.7},Jhabua:{s:"Madhya Pradesh",lat:22.77,lng:74.59,p:10.2},
+ Barmer:{s:"Rajasthan",lat:25.75,lng:71.39,p:26.0},Jaisalmer:{s:"Rajasthan",lat:26.92,lng:70.90,p:6.7},
+ Dungarpur:{s:"Rajasthan",lat:23.84,lng:73.71,p:13.9},Nagaon:{s:"Assam",lat:26.35,lng:92.68,p:28.2},
+ Dibrugarh:{s:"Assam",lat:27.48,lng:94.91,p:13.3},Purulia:{s:"West Bengal",lat:23.33,lng:86.36,p:29.3},
+ "Purba Medinipur":{s:"West Bengal",lat:22.29,lng:87.92,p:51.0},Nandurbar:{s:"Maharashtra",lat:21.37,lng:74.24,p:16.5},
+ Gadchiroli:{s:"Maharashtra",lat:20.18,lng:80.00,p:10.7},Yavatmal:{s:"Maharashtra",lat:20.39,lng:78.13,p:27.7},
+ Raichur:{s:"Karnataka",lat:16.21,lng:77.36,p:19.3},Koppal:{s:"Karnataka",lat:15.35,lng:76.15,p:13.9},
+ Dharmapuri:{s:"Tamil Nadu",lat:12.13,lng:78.16,p:15.1},Ramanathapuram:{s:"Tamil Nadu",lat:9.36,lng:78.83,p:13.5},
+ Adilabad:{s:"Telangana",lat:19.67,lng:78.53,p:27.4},Nalgonda:{s:"Telangana",lat:17.05,lng:79.27,p:32.5},
+ Prakasam:{s:"Andhra Pradesh",lat:15.34,lng:79.55,p:33.9},Kurnool:{s:"Andhra Pradesh",lat:15.83,lng:78.04,p:40.5},
+ Wayanad:{s:"Kerala",lat:11.69,lng:76.13,p:8.2},Palakkad:{s:"Kerala",lat:10.78,lng:76.65,p:28.1},
+ Bastar:{s:"Chhattisgarh",lat:19.10,lng:81.95,p:14.1},Sukma:{s:"Chhattisgarh",lat:18.39,lng:81.66,p:2.5},
+ "Chhota Udaipur":{s:"Gujarat",lat:22.30,lng:74.01,p:10.7}
+};
+const SEED=[
+ ["हमारे गाँव में पीने के पानी की टंकी सूखी है, महिलाएँ 2 किमी चलकर पानी लाती हैं","hi","water","high","Sitapur",3],
+ ["गाँव की सड़क टूटी है, बारिश में स्कूल जाना मुश्किल हो जाता है","hi","roads","high","Bahraich",8],
+ ["स्वास्थ्य केंद्र में डॉक्टर नहीं आते, बुखार के मरीज़ों को 30 किमी जाना पड़ता है","hi","healthcare","critical","Shravasti",5],
+ ["बिजली दिन में 10 घंटे बंद रहती है, किसानों की सिंचाई रुक जाती है","hi","power","high","Chitrakoot",12],
+ ["হাসপাতালে ওষুধ নেই, গর্ভবতী মহিলাদের কষ্ট হয়","bn","healthcare","critical","Patna",6],
+ ["রাস্তা ভাঙা, অ্যাম্বুলেন্স আসতে দেরি হয়","bn","roads","high","Muzaffarpur",10],
+ ["নদীর বাঁধ দুর্বল, বন্যার ভয় আছে","bn","flood_resilience","critical","Araria",4],
+ ["குடிநீர் கிணறு வற்றிவிட்டது, விவசாயம் பாதிக்கப்பட்டுள்ளது","ta","water","high","Dharmapuri",7],
+ ["பள்ளிக்கூடம் இல்லாததால் குழந்தைகள் 8 கி.மீ நடக்கிறார்கள்","ta","education","high","Ramanathapuram",9],
+ ["மழைநீர் வடிகால் இல்லை, வீடுகளில் தண்ணீர் புகுகிறது","ta","sanitation","medium","Ramanathapuram",14],
+ ["गावातील आरोग्य केंद्रात औषधे संपली आहेत","mr","healthcare","high","Nandurbar",6],
+ ["रस्त्यावर मोठे खड्डे आहेत, अपघात होतात","mr","roads","high","Yavatmal",11],
+ ["पाण्याची टाकी गळते, रोज पाणी वाया जाते","mr","water","medium","Gadchiroli",14],
+ ["మా పాఠశాలకు ఉపాధ్యాయులు లేరు, పిల్లలు చదువు ఆపేశారు","te","education","high","Adilabad",13],
+ ["మంచినీటి పైపులైన్ పని చేయదు, బోరు నీరు కూడా రాదు","te","water","high","Nalgonda",5],
+ ["മഴക്കാലത്ത് റോഡ് ഒഴുകിപ്പോകുന്നു, ഗതാഗതം നിലച്ചു","ml","roads","high","Wayanad",8],
+ ["ആരോഗ്യ കേന്ദ്രത്തിൽ ഡോക്ടർ ഇല്ല, രോഗികൾ കാത്തിരിക്കുന്നു","ml","healthcare","critical","Palakkad",4],
+ ["ଗାଁ ରାସ୍ତା ଖରାପ, ପିଲାମାନେ ଦୁର୍ଗମ ପଥରେ ଯାଆନ୍ତି","or","roads","high","Kandhamal",9],
+ ["ପାନୀୟ ଜଳ ପ୍ରକଳ୍ପ ଅଧାରୁ ବନ୍ଦ ହୋଇଗଲା","or","water","high","Malkangiri",7],
+ ["ગામમાં વીજળી બાર વાગ્યા પછી બંધ થાય છે, રાત્રે અંધારું","gu","power","medium","Chhota Udaipur",15],
+ ["ଆମ ଗାଁରେ ମୋବାଇଲ ନେଟୱାର୍କ ନାହିଁ, ଅନଲାଇନ କ୍ଲାସ ବନ୍ଦ","or","connectivity","medium","Koraput",16],
+ ["আমাদের এলাকায় ইন্টারনেট নেই, অনলাইন ক্লাস বন্ধ","bn","connectivity","high","Gaya",12],
+ ["বানপানীত শস্য নষ্ট হৈছে, সাহায্য নাপালোঁ","as","agriculture","critical","Dibrugarh",6],
+ ["किसानों को बीज और खाद नहीं मिल रही, बुवाई का समय निकल रहा है","hi","agriculture","high","Shivpuri",18],
+ ["अनुसूचित जनजाति बस्ती में हैंडपंप खराब पड़े हैं","hi","water","high","Jhabua",10],
+ ["बच्चों का आँगनवाड़ी केंद्र बंद है, दोपहर का भोजन नहीं मिल रहा","hi","education","medium","Betul",20],
+ ["पक्का आवास योजना की किस्त नहीं आई, कच्चे घर में रह रहे हैं","hi","housing","high","Barmer",22],
+ ["सोलर लाइट लगाने की मांग, रात में सांप-जानवर का डर रहता है","hi","power","medium","Jaisalmer",24],
+ ["बस स्टैंड तक सड़क कच्ची है, बीमार लोग अस्पताल नहीं पहुँच पाते","hi","roads","high","Purulia",13],
+ ["कोयलांचल में पानी में फ्लोराइड है, लोग बीमार पड़ते हैं","hi","water","critical","Latehar",5],
+ ["सामुदायिक शौचालय टूटा है, महिलाएँ परेशान हैं","hi","sanitation","high","Chatra",13],
+ ["प्राथमिक स्वास्थ्य केंद्र में बिजली नहीं, टीकाकरण रुका हुआ है","hi","healthcare","critical","Sheohar",3],
+ ["ರಸ್ತೆ ಕಾಮಗಾರಿ ಅಪೂರ್ಣ, ಚರಂಡಿ ಕಟ್ಟಿಕೊಂಡಿದೆ","kn","sanitation","medium","Koppal",17],
+ ["ಕುಡಿಯುವ ನೀರಿಗೆ 3 ಕಿ.ಮೀ ನಡೆಯಬೇಕು, ಹೆಂಗಸರು ಕಷ್ಟಪಡುತ್ತಾರೆ","kn","water","high","Raichur",9],
+ ["ఇంటి సమీపంలో సిమెంట్ రోడ్డు లేదు, మట్టిరోడ్డు దెబ్బతింది","te","roads","medium","Kurnool",21],
+ ["మా ప్రాంతంలో వరి పంట నీటి కొరతతో ఎండిపోతోంది","te","agriculture","high","Prakasam",8],
+ ["ଆମ ବ୍ଲକରେ ମେଡିକାଲ ଷ୍ଟାଫ ନାହିଁ, ରୋଗୀ ଅପେକ୍ଷା କରନ୍ତି","or","healthcare","high","Rayagada",11],
+ ["ବିଦ୍ୟାଳୟ ଛାତ ଗଳି ଯାଉଛି, ବର୍ଷାରେ ପାଠ ବନ୍ଦ","or","education","medium","Nabarangpur",19],
+ ["The bridge over the canal is cracked; two-wheelers skid during monsoon","en","roads","critical","Bastar",2],
+ ["No ambulance service; pregnant women travel 40 km on a tractor to reach the hospital","en","healthcare","critical","Sukma",4]
+];
+
+/* ================= I18N ================= */
+const LANGS={en:"English",hi:"हिन्दी",ta:"தமிழ்",bn:"বাংলা",mr:"मराठी"};
+const I18N={
+ en:{tabCitizen:"Citizen Portal",tabPolicy:"Policy Dashboard",appLang:"App language",heroTitle:"Raise your voice for your community",heroSub:"Speak, type or photograph a development request — water, roads, health, power, flood safety… The AI understands any Indian language and routes it to national planners.",statReports:"reports",statDistricts:"districts",statLangs:"languages",catHint:"What is this about? (tap a tile — it guides the AI)",txtPh:"Describe the problem in your language…",btnRec:"Record",btnStop:"Stop",btnLoc:"Use my location",btnPhoto:"Photo",btnSubmit:"Submit to national planners",analyzing:"AI is analyzing your request…",resTitle:"AI analysis",catLabel:"Category",urgLabel:"Urgency verdict",locLabel:"Location",schemeLabel:"Routed to scheme",btnListen:"Listen",btnShare:"WhatsApp",photoNote:"Photo analysis",recentTitle:"📋 Latest citizen requests",filterClear:"Clear filter",noReports:"No reports yet — submit one above.",statusReceived:"Received",statusAck:"Acknowledged",statusProgress:"In progress",statusResolved:"Resolved",kpiTotal:"Total requests",kpiUrgent:"High / critical",kpiDistricts:"Districts covered",kpiLangs:"Languages detected",kpiResolved:"Marked resolved",mapTitle:"🗺️ Demand hotspots",mapSub:"Marker size = petition volume · color = urgent share (red > 50%, orange > 25%). With a Google Maps key this is real Google Maps; otherwise keyless Esri satellite.",prioTitle:"📊 Composite priority index — fully auditable",prioSub:"Score = 40% demand + 20% urgency + 20% state infra-deficit proxy (NITI SDG-based) + 10% 24h momentum + 10% population equity",projTitle:"🎯 AI-recommended priority projects",briefTitle:"🧠 AI Executive Brief",btnSimulate:"⚡ Simulate live reports",btnRefresh:"↻ Refresh AI",btnReset:"↺ Reset demo data",thDistrict:"District",thState:"State",thTopCat:"Top demand",thVol:"Requests",thUrg:"Urgent %",thScore:"Priority score",needInput:"Please type a request, record audio or add a photo.",micFail:"Microphone not available. Use text instead.",gpsOk:"Location captured",gpsFail:"Could not get location — using AI geolocation.",fbOk:"☁️ Cloud sync connected (Firebase)",fbFail:"Firebase connection failed — running local mode.",demoBanner:"Demo mode: rule-based extraction is active (no AI key). Add a free Gemini API key for full multilingual AI intake.",aboutT:"ℹ️ About SevaSetu — how it works & data sources",briefLocal:"Brief is generated by Gemini in your language when a key is set.",urg:{low:"LOW",medium:"MEDIUM",high:"HIGH",critical:"CRITICAL"}},
+ hi:{tabCitizen:"नागरिक पोर्टल",tabPolicy:"नीति डैशबोर्ड",appLang:"ऐप भाषा",heroTitle:"अपने समुदाय की आवाज़ उठाएँ",heroSub:"बोलें, लिखें या फ़ोटो भेजें — पानी, सड़क, स्वास्थ्य, बिजली, बाढ़ सुरक्षा… AI हर भारतीय भाषा समझता है और राष्ट्रीय योजनाकारों तक पहुँचाता है।",statReports:"रिपोर्ट",statDistricts:"ज़िले",statLangs:"भाषाएँ",catHint:"यह किस बारे में है? (टाइल दबाएँ — AI को दिशा मिलेगी)",txtPh:"अपनी भाषा में समस्या लिखें…",btnRec:"रिकॉर्ड",btnStop:"रोकें",btnLoc:"मेरी लोकेशन",btnPhoto:"फ़ोटो",btnSubmit:"राष्ट्रीय योजनाकारों को भेजें",analyzing:"AI आपकी रिपोर्ट का विश्लेषण कर रहा है…",resTitle:"AI विश्लेषण",catLabel:"श्रेणी",urgLabel:"तात्कालिकता",locLabel:"स्थान",schemeLabel:"योजना",btnListen:"सुनें",btnShare:"WhatsApp",photoNote:"फ़ोटो विश्लेषण",recentTitle:"📋 नवीनतम नागरिक अनुरोध",filterClear:"फ़िल्टर हटाएँ",noReports:"अभी कोई रिपोर्ट नहीं — ऊपर एक भेजें।",statusReceived:"प्राप्त",statusAck:"स्वीकृत",statusProgress:"प्रगति में",statusResolved:"हल हुआ",kpiTotal:"कुल अनुरोध",kpiUrgent:"उच्च / गंभीर",kpiDistricts:"ज़िले शामिल",kpiLangs:"भाषाएँ पहचानी",kpiResolved:"हल चिह्नित",mapTitle:"🗺️ माँग हॉटस्पॉट",mapSub:"मार्कर आकार = अनुरोध संख्या · रंग = तात्कालिकता हिस्सा (लाल > 50%, नारंगी > 25%)",prioTitle:"📊 समग्र प्राथमिकता सूचकांक — पूर्णतः पारदर्शी",prioSub:"स्कोर = 40% माँग + 20% तात्कालिकता + 20% राज्य अवसंरचना-कमी + 10% 24घंटे गति + 10% जनसंख्या समानता",projTitle:"🎯 AI अनुशंसित प्राथमिक परियोजनाएँ",briefTitle:"🧠 AI कार्यकारी ब्रीफ़",btnSimulate:"⚡ लाइव रिपोर्ट सिमुलेट करें",btnRefresh:"↻ AI रीफ़्रेश",btnReset:"↺ डेटा रीसेट",thDistrict:"ज़िला",thState:"राज्य",thTopCat:"मुख्य माँग",thVol:"अनुरोध",thUrg:"तात्कालिक %",thScore:"प्राथमिकता स्कोर",needInput:"कृपया अनुरोध लिखें, रिकॉर्ड करें या फ़ोटो जोड़ें।",micFail:"माइक्रोफ़ोन उपलब्ध नहीं। टेक्स्ट उपयोग करें।",gpsOk:"स्थान मिल गया",gpsFail:"स्थान नहीं मिला — AI अनुमान लगाएगा।",fbOk:"☁️ क्लाउड सिंक जुड़ गया (Firebase)",fbFail:"Firebase कनेक्शन विफल — लोकल मोड।",demoBanner:"डेमो मोड: नियम-आधारित विश्लेषण सक्रिय है (AI कुंजी नहीं)। पूर्ण AI के लिए मुफ़्त Gemini कुंजी जोड़ें।",aboutT:"ℹ️ SevaSetu के बारे में — कैसे काम करता है",briefLocal:"कुंजी सेट होने पर ब्रीफ़ आपकी भाषा में Gemini बनाता है।",urg:{low:"कम",medium:"मध्यम",high:"उच्च",critical:"गंभीर"}},
+ ta:{tabCitizen:"குடிமக்கள் தளம்",tabPolicy:"கொள்கை டாஷ்போர்டு",appLang:"செயலி மொழி",heroTitle:"உங்கள் சமூகத்திற்காக குரல் எழுப்புங்கள்",heroSub:"பேசுங்கள், எழுதுங்கள் அல்லது புகைப்படம் அனுப்புங்கள் — நீர், சாலை, சுகாதாரம், மின்சாரம்… AI எந்த இந்திய மொழியையும் புரிந்துகொள்ளும்.",catHint:"இது எதைப் பற்றி? (ஓர் ஓடு தட்டவும்)",txtPh:"உங்கள் மொழியில் சிக்கலை விவரிக்கவும்…",btnRec:"பதிவு",btnStop:"நிறுத்து",btnLoc:"எனது இருப்பிடம்",btnPhoto:"புகைப்படம்",btnSubmit:"தேசிய திட்டமிடுபவர்களுக்கு அனுப்பு",resTitle:"AI பகுப்பாய்வு",catLabel:"வகை",urgLabel:"அவசர நிலை",locLabel:"இருப்பிடம்",schemeLabel:"திட்டம்",btnListen:"கேள்",btnShare:"WhatsApp",recentTitle:"📋 சமீபத்திய கோரிக்கைகள்",noReports:"இன்னும் கோரிக்கை இல்லை.",statusReceived:"பெறப்பட்டது",statusAck:"ஏற்கப்பட்டது",statusProgress:"நடைபெறுகிறது",statusResolved:"தீர்க்கப்பட்டது",kpiTotal:"மொத்த கோரிக்கைகள்",kpiUrgent:"அதிக / மிக அவசர",kpiDistricts:"மாவட்டங்கள்",kpiLangs:"மொழிகள்",kpiResolved:"தீர்க்கப்பட்டவை",projTitle:"🎯 AI பரிந்துரைத்த திட்டங்கள்",briefTitle:"🧠 AI நிர்வாக சுருக்கம்",btnSimulate:"⚡ நேரடி கோரிக்கைகளை உருவாக்கு",btnRefresh:"↻ புதுப்பி",btnReset:"↺ மீட்டமை",thDistrict:"மாவட்டம்",thState:"மாநிலம்",thVol:"கோரிக்கைகள்",thUrg:"அவசர %",thScore:"முன்னுரிமை மதிப்பெண்",needInput:"கோரிக்கையை எழுதவும், பதிவு செய்யவும் அல்லது படம் சேர்க்கவும்.",micFail:"மைக்ரோஃபோன் இல்லை. உரையைப் பயன்படுத்தவும்.",gpsOk:"இருப்பிடம் பெறப்பட்டது",urg:{low:"குறைவு",medium:"நடுத்தரம்",high:"அதிகம்",critical:"மிக அவசரம்"}},
+ bn:{tabCitizen:"নাগরিক পোর্টাল",tabPolicy:"নীতি ড্যাশবোর্ড",appLang:"অ্যাপ ভাষা",heroTitle:"আপনার সম্প্রদায়ের জন্য voix তুলুন",heroSub:"বলুন, লিখুন বা ছবি পাঠান — জল, রাস্তা, স্বাস্থ্য, বিদ্যুৎ… AI যেকোনো ভারতীয় ভাষা বোঝে।",catHint:"এটি কী সম্পর্কে? (একটি টাইল চাপুন)",txtPh:"আপনার ভাষায় সমস্যা লিখুন…",btnRec:"রেকর্ড",btnStop:"থামুন",btnLoc:"আমার লোকেশন",btnPhoto:"ছবি",btnSubmit:"জাতীয় পরিকল্পনাকারীদের পাঠান",resTitle:"AI বিশ্লেষণ",catLabel:"বিভাগ",urgLabel:"জরুরি অবস্থা",locLabel:"স্থান",schemeLabel:"প্রকল্প",btnListen:"শুনুন",btnShare:"WhatsApp",recentTitle:"📋 সাম্প্রতিক অনুরোধ",noReports:"এখনো কোনো অনুরোধ নেই।",statusReceived:"গৃহীত",statusAck:"স্বীকৃত",statusProgress:"চলমান",statusResolved:"সমাধান",kpiTotal:"মোট অনুরোধ",kpiUrgent:"উচ্চ / জরুরি",kpiDistricts:"জেলা",kpiLangs:"ভাষা",kpiResolved:"সমাধান হয়েছে",projTitle:"🎯 AI সুপারিশকৃত প্রকল্প",briefTitle:"🧠 AI নির্বাহী সারসংক্ষেপ",btnSimulate:"⚡ লাইভ রিপোর্ট সিমুলেট",btnRefresh:"↻ রিফ্রেশ",btnReset:"↺ রিসেট",thDistrict:"জেলা",thState:"রাজ্য",thVol:"অনুরোধ",thUrg:"জরুরি %",thScore:"অগ্রাধিকার স্কোর",needInput:"অনুগ্রহ করে অনুরোধ লিখুন বা ছবি যোগ করুন।",micFail:"মাইক্রোফোন নেই। লেখা ব্যবহার করুন।",gpsOk:"স্থান পাওয়া গেছে",urg:{low:"কম",medium:"মাঝারি",high:"উচ্চ",critical:"জরুরি"}},
+ mr:{tabCitizen:"नागरिक पोर्टल",tabPolicy:"धोरण डॅशबोर्ड",appLang:"अ‍ॅप भाषा",heroTitle:"तुमच्या समुदायासाठी आवाज उठवा",heroSub:"बोला, लिहा किंवा फोटो पाठवा — पाणी, रस्ते, आरोग्य, वीज… AI कोणतीही भारतीय भाषा समजते.",catHint:"हे कशाबद्दल आहे? (टाइल दाबा)",txtPh:"तुमच्या भाषेत समस्या लिहा…",btnRec:"रेकॉर्ड",btnStop:"थांबा",btnLoc:"माझे स्थान",btnPhoto:"फोटो",btnSubmit:"राष्ट्रीय नियोजकांना पाठवा",resTitle:"AI विश्लेषण",catLabel:"श्रेणी",urgLabel:"तातडी",locLabel:"ठिकाण",schemeLabel:"योजना",btnListen:"ऐका",btnShare:"WhatsApp",recentTitle:"📋 अलीकडील विनंत्या",noReports:"अजून विनंती नाही.",statusReceived:"प्राप्त",statusAck:"स्वीकारले",statusProgress:"प्रगतीत",statusResolved:"निकाली",kpiTotal:"एकूण विनंत्या",kpiUrgent:"उच्च / गंभीर",kpiDistricts:"जिल्हे",kpiLangs:"भाषा",kpiResolved:"निकाली",projTitle:"🎯 AI शिफारस प्रकल्प",briefTitle:"🧠 AI कार्यकारी सारांश",btnSimulate:"⚡ लाइव्ह रिपोर्ट सिम्युलेट",btnRefresh:"↻ रिफ्रेश",btnReset:"↺ रीसेट",thDistrict:"जिल्हा",thState:"राज्य",thVol:"विनंत्या",thUrg:"तातडी %",thScore:"प्राधान्य गुण",needInput:"कृपया विनंती लिहा किंवा फोटो जोडा.",micFail:"मायक्रोफोन नाही. मजकूर वापरा.",gpsOk:"स्थान मिळाले",urg:{low:"कमी",medium:"मध्यम",high:"उच्च",critical:"गंभीर"}}
+};
+const LANGVOICE={en:"en-IN",hi:"hi-IN",ta:"ta-IN",bn:"bn-IN",mr:"mr-IN"};
+
+/* ================= UTILS ================= */
+const $=id=>document.getElementById(id);
+function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+function toast(m){const t=$("toast");t.textContent=m;t.classList.remove("hidden");clearTimeout(t._t);t._t=setTimeout(()=>t.classList.add("hidden"),3800);}
+function timeAgo(ts){const s=Math.max(1,(Date.now()-ts)/1000);if(s<3600)return Math.round(s/60)+"m ago";if(s<86400)return Math.round(s/3600)+"h ago";return Math.round(s/86400)+"d ago";}
+function b64(ab){let bin="";const b=new Uint8Array(ab),C=0x8000;for(let i=0;i<b.length;i+=C)bin+=String.fromCharCode.apply(null,b.subarray(i,i+C));return btoa(bin);}
+let LANG="en",view="citizen",selectedCat=null,filterCat=null,pendingGps=null,photoData=null,photoThumb=null,audioData=null,lastResult=null;
+let REPORTS=[],fb=null,aiCache={},aiBusy=false,gmap=null,gmarkers=[],ginfo=null,lmap=null,llayer=null,lStreet=null,lSat=null;
+
+/* ================= STORAGE + FIREBASE ================= */
+function cfg(){try{return JSON.parse(localStorage.getItem(LS_CFG))||{}}catch{return{}}}
+function getKey(){return cfg().gemini||"";}
+function getMapsKey(){return cfg().maps||"";}
+function getFB(){const c=cfg();return c.fb&&c.fb.projectId?c.fb:null;}
+function seedReports(){return SEED.map((s,i)=>({id:"seed-"+i,originalText:s[0],lang:s[1],category:s[2],urgency:s[3],district:s[4],state:DISTRICTS[s[4]]?.s||"",lat:DISTRICTS[s[4]]?.lat,lng:DISTRICTS[s[4]]?.lng,english:"",local:"",urgencyReason:"",photoNote:"",sentiment:"negative",status:["received","acknowledged","in_progress","resolved"][i%4],createdAt:Date.now()-s[5]*3600*1000}));}
+function load(){try{const s=JSON.parse(localStorage.getItem(LS_REPORTS));if(Array.isArray(s)&&s.length)return s;}catch{}return seedReports();}
+function save(){try{localStorage.setItem(LS_REPORTS,JSON.stringify(REPORTS));}catch{}}
+async function initFirebase(){
+  const c=getFB();if(!c)return false;
+  try{
+    const [am,fm,aum]=await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"),
+      import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js")
+    ]);
+    const app=am.initializeApp(c),db=fm.getFirestore(app),auth=aum.getAuth(app);
+    try{await aum.signInAnonymously(auth);}catch(e){console.warn("anon auth:",e);}
+    fb={db,fm};
+    const snap=await fm.getDocs(fm.collection(db,"reports"));
+    const remote=[];snap.forEach(d=>remote.push({...d.data(),id:d.id,_remote:true}));
+    if(remote.length){
+      const seen=new Set(remote.map(r=>r.id));
+      REPORTS=[...remote,...REPORTS.filter(r=>!seen.has(r.id))].sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+      save();renderRecent();if(view==="policy")renderPolicy();
+    }
+    $("fb-badge").classList.remove("hidden");toast(t("fbOk"));return true;
+  }catch(e){console.warn("Firebase:",e);toast(t("fbFail"));return false;}
+}
+async function pushCloud(r){
+  if(!fb)return;
+  try{const{db,fm}=fb;await fm.setDoc(fm.doc(db,"reports",r.id),{...r,photo:r.photo?"yes":"no"});}
+  catch(e){console.warn("push:",e);}
+}
+
+/* ================= I18N ================= */
+function t(k){const d=I18N[LANG]||I18N.en;return d[k]??I18N.en[k]??k;}
+function applyLang(){
+  document.querySelectorAll("[data-i18n]").forEach(el=>{el.textContent=t(el.dataset.i18n);});
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{el.placeholder=t(el.dataset.i18nPh);});
+  const box=$("ui-langs");box.innerHTML="";
+  Object.keys(LANGS).forEach(l=>{
+    const b=document.createElement("button");
+    b.className="chip "+(l===LANG?"bg-[#17324D] text-white":"bg-[#EEF3F8] text-[#17324D] border border-[#D9E0E7]");
+    b.textContent=LANGS[l];b.onclick=()=>{LANG=l;aiCache={};applyLang();renderRecent();if(view==="policy")renderPolicy();updateHeroStats();};
+    box.appendChild(b);
+  });
+  $("rec-label").textContent=mediaRec?t("btnStop"):t("btnRec");
+  if(lastResult)renderResult(lastResult);
+}
+function updateHeroStats(){
+  const d=new Set(REPORTS.map(r=>r.district)),l=new Set(REPORTS.map(r=>r.lang));
+  $("hero-stats").textContent=`${REPORTS.length} ${t("statReports")} · ${d.size} ${t("statDistricts")} · ${l.size} ${t("statLangs")}`;
+}
+
+/* ================= GEMINI ================= */
+async function geminiJSON(parts){
+  const key=getKey();if(!key)throw new Error("no-key");
+  let last=null;
+  for(const m of GEMINI_MODELS){
+    try{
+      const res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${encodeURIComponent(key)}`,{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({contents:[{role:"user",parts}],generationConfig:{temperature:0.2,responseMimeType:"application/json"}})
+      });
+      if(!res.ok){const txt=await res.text();last=new Error(`${m}: ${res.status} ${txt.slice(0,140)}`);if([400,403,404,429].includes(res.status))continue;throw last;}
+      const data=await res.json();
+      const text=(data?.candidates?.[0]?.content?.parts||[]).map(p=>p.text||"").join("");
+      if(!text)throw new Error("empty response");
+      return JSON.parse(text.replace(/```json|```/g,"").trim());
+    }catch(e){last=e;continue;}
+  }
+  throw last||new Error("gemini-failed");
+}
+function heuristicAnalyze(text,hint){
+  const s=(text||"").toLowerCase();
+  const KW={water:["water","पानी","पानी","পানি","তண்ணீர்","पाणी","నీటి","വെള്ളം","ପାନୀୟ","પાણી","tap","handpump","well","बोर","कुआँ","टंकी"],roads:["road","सड़क","রাস্তা","சாலை","रस्त","రోడ్డు","റോഡ്","ରାସ୍ତା","bridge","पुल","खड्डे","pothole"],healthcare:["hospital","health","डॉक्टर","अस्पताल","স্বাস্থ্য","হাসপাতাল","மருத்துவ","आरोग्य","స్వాస్థ్య","ആരോഗ്യ","doctor","clinic","ambulance","एम्बुलेंस"],power:["power","बिजली","বিদ্যুৎ","மின்சாரம்","वीज","విద్యుత్","വൈദ്യുതി","ବିଦ୍ୟୁତ","વીજળી","electricity","light"],education:["school","स्कूल","पाठशाल","বিদ্যালয়","பள்ளி","शाळा","బడి","സ്കൂൾ","ବିଦ୍ୟାଳୟ","आँगनवाड़ी","teacher"],sanitation:["toilet","शौचालय","শৌচালয়","கழிவுநீர்","शौचालय","drain","नाली","sewage","ಚರಂಡಿ","গutter"],housing:["house","घर","আবাস","வீடு","घरकुल","ఇల్లు","വീട്","ଘର","ઘર","आवास"],connectivity:["internet","नेटवर्क","network","ইন্টারনেট","இணைய","मोबाइल","నెట్‌వర్క్","ନେଟୱାର୍କ","4g"],flood_resilience:["flood","बाढ़","বন্যা","வெள்ள","पूर","వరద","വെള്ളപ്പൊക്ക","ବନ୍ୟା","dam","बाँध"],agriculture:["crop","फसल","কৃষি","விவசாய","पीक","పంట","വിള","ଫସଲ","કૃષિ","farmer","किसान","सिंचाई","seed","बीज"]};
+  let cat=hint||"water";
+  if(!hint){for(const k in KW){if(KW[k].some(w=>s.includes(w))){cat=k;break;}}}
+  let urg="medium";
+  if(/गंभीर|मौत|बाढ़|emergency|critical|नहीं पहुँच|অ্যাম্বুলেন্স|అత్యవసర|അടിയന്തിര|ନାହିଁ ଡାକ୍ତର|flood|जान/.test(s))urg="critical";
+  else if(/टूट|खराब|broken|damaged|नहीं|নেই|இல்லை|లేదు|ഇല്ല|ନାହିଁ|નથી|बंद/.test(s))urg="high";
+  let district="Sitapur";
+  for(const d in DISTRICTS){if(text&&text.toLowerCase().includes(d.toLowerCase())){district=d;break;}}
+  return{originalText:text,lang:LANG==="en"?"en":LANG,english:text,local:text,category:cat,urgency:urg,urgencyReason:"Rule-based assessment (add a Gemini API key for AI reasoning).",district,state:DISTRICTS[district]?.s||"",lat:DISTRICTS[district]?.lat,lng:DISTRICTS[district]?.lng,sentiment:"negative",photoNote:photoData?"Photo attached (AI vision needs a Gemini key).":""};
+}
+async function analyzeAI(text){
+  const parts=[];
+  let prompt=`You are SevaSetu's civic intake AI for India. Analyze the citizen's development request. The language may be any Indian language.
+Return ONLY JSON with keys: originalText, lang, english, local, category, urgency, urgencyReason, district, state, lat, lng, sentiment, photoNote.
+- english: English translation. local: translation in ${LANGS[LANG]} (if that is English, repeat english).
+- category: exactly one of water, roads, healthcare, power, education, sanitation, housing, connectivity, flood_resilience, agriculture
+- urgency: low | medium | high | critical. urgencyReason: ONE short sentence in ${LANGS[LANG]} explaining why.
+- district & state: nearest real Indian district, lat/lng as numbers.
+- photoNote: if an image is attached, ONE short sentence in ${LANGS[LANG]} describing the infrastructure problem visible; else "".
+- sentiment: positive | neutral | negative
+Citizen text: """${text||"(no text — analyze the attached photo/audio)"}"""
+Category hint chosen by citizen: ${selectedCat||"none"}
+${pendingGps?`GPS coordinates captured: ${pendingGps.lat}, ${pendingGps.lng} (${pendingGps.district||""} ${pendingGps.state||""}) — trust this location over your own guess.`:""}`;
+  parts.push({text:parts.length?prompt:prompt});
+  if(photoData)parts.push({inlineData:{mimeType:"image/jpeg",data:photoData}});
+  if(audioData)parts.push({inlineData:{mimeType:"audio/wav",data:audioData}});
+  const out=await geminiJSON(parts);
+  if(pendingGps){out.lat=pendingGps.lat;out.lng=pendingGps.lng;if(pendingGps.district)out.district=pendingGps.district;if(pendingGps.state)out.state=pendingGps.state;}
+  if(selectedCat)out.category=selectedCat;
+  return out;
+}
+
+/* ================= CITIZEN FORM ================= */
+function renderTiles(){
+  const box=$("cat-tiles");box.innerHTML="";
+  Object.entries(CATS).forEach(([k,c])=>{
+    const b=document.createElement("button");
+    b.className="tile"+(selectedCat===k?" on":"");b.dataset.cat=k;
+    b.innerHTML=`<div style="font-size:1.2rem">${c.i}</div>${c.n}`;
+    b.onclick=()=>{selectedCat=selectedCat===k?null:k;renderTiles();};
+    box.appendChild(b);
+  });
+}
+function onPhoto(e){
+  const f=e.target.files[0];if(!f)return;
+  const img=new Image(),rd=new FileReader();
+  rd.onload=()=>{img.onload=()=>{
+    const max=1024,sc=Math.min(1,max/Math.max(img.width,img.height));
+    const cv=document.createElement("canvas");cv.width=img.width*sc;cv.height=img.height*sc;
+    cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+    const url=cv.toDataURL("image/jpeg",0.72);
+    photoData=url.split(",")[1];photoThumb=url;renderAttach();
+  };img.src=rd.result;};
+  rd.readAsDataURL(f);
+}
+function renderAttach(){
+  const box=$("attach-row");box.innerHTML="";
+  if(photoThumb){const d=document.createElement("div");d.className="flex items-center gap-2 chip bg-[#EEF3F8] text-[#17324D]";
+    d.innerHTML=`<img src="${photoThumb}" class="h-8 w-8 rounded object-cover"> 📷 ${t("btnPhoto")} <button onclick="photoData=null;photoThumb=null;renderAttach()" class="font-bold">✕</button>`;
+    box.appendChild(d);}
+  if(pendingGps){const d=document.createElement("div");d.className="chip bg-[#E7F4EC] text-[#287A53]";
+    d.textContent=`📍 ${t("gpsOk")}: ${pendingGps.district||""} ${pendingGps.state||""} (${pendingGps.lat.toFixed(2)}, ${pendingGps.lng.toFixed(2)})`;box.appendChild(d);}
+  if(audioData){const d=document.createElement("div");d.className="chip bg-[#EEF3F8] text-[#17324D]";d.textContent="🎙️ Audio ready";box.appendChild(d);}
+}
+let mediaRec=null,recChunks=[],recTimer=null,recStart=0;
+async function toggleRec(){if(mediaRec){stopRec();return;}await startRec();}
+async function startRec(){
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:true});
+    recChunks=[];mediaRec=new MediaRecorder(stream);
+    mediaRec.ondataavailable=e=>{if(e.data.size)recChunks.push(e.data);};
+    mediaRec.onstop=async()=>{
+      try{
+        const blob=new Blob(recChunks,{type:mediaRec.mimeType||"audio/webm"});
+        const wav=await toWav16k(blob);
+        if(wav.byteLength>PAYLOAD_MAX)return toast("Recording too long — try a shorter one.");
+        audioData=b64(wav);renderAttach();
+      }catch(e){console.warn("audio:",e);}
+    };
+    mediaRec.start();recStart=Date.now();
+    $("rec-btn").classList.add("rec-on");$("rec-label").textContent=t("btnStop");
+    recTimer=setInterval(()=>{const s=Math.floor((Date.now()-recStart)/1000);$("rec-time").textContent=`🔴 ${s}s / ${MAX_SECONDS}s`;if(s>=MAX_SECONDS)stopRec();},500);
+  }catch(e){toast(t("micFail"));}
+}
+function stopRec(){
+  if(!mediaRec)return;
+  try{mediaRec.stop();}catch{}
+  clearInterval(recTimer);recTimer=null;
+  try{mediaRec.stream.getTracks().forEach(t=>t.stop());}catch{}
+  mediaRec=null;$("rec-btn").classList.remove("rec-on");$("rec-label").textContent=t("btnRec");
+  setTimeout(()=>{$("rec-time").textContent="";},1500);
+}
+async function toWav16k(blob){
+  const buf=await blob.arrayBuffer();
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const audio=await ctx.decodeAudioData(buf);
+  const sr=16000;
+  const off=new OfflineAudioContext(1,Math.max(1,Math.ceil(audio.duration*sr)),sr);
+  const src=off.createBufferSource();src.buffer=audio;src.connect(off.destination);src.start();
+  const rendered=await off.startRendering();const data=rendered.getChannelData(0);
+  const len=data.length*2,ab=new ArrayBuffer(44+len),dv=new DataView(ab);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,"RIFF");dv.setUint32(4,36+len,true);ws(8,"WAVE");ws(12,"fmt ");dv.setUint32(16,16,true);
+  dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);
+  dv.setUint16(32,2,true);dv.setUint16(34,16,true);ws(36,"data");dv.setUint32(40,len,true);
+  for(let i=0;i<data.length;i++){const s=Math.max(-1,Math.min(1,data[i]));dv.setInt16(44+i*2,s<0?s*0x8000:s*0x7FFF,true);}
+  try{ctx.close();}catch{}
+  return ab;
+}
+function useGps(){
+  if(!navigator.geolocation)return toast(t("gpsFail"));
+  navigator.geolocation.getCurrentPosition(async p=>{
+    const lat=p.coords.latitude,lng=p.coords.longitude;
+    pendingGps={lat,lng};
+    const mk=getMapsKey();
+    if(mk){
+      try{
+        const r=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${mk}`);
+        const j=await r.json();const comps=j?.results?.[0]?.address_components||[];
+        const d=comps.find(c=>c.types.includes("administrative_area_level_3"))||comps.find(c=>c.types.includes("administrative_area_level_2"));
+        const s=comps.find(c=>c.types.includes("administrative_area_level_1"));
+        if(d)pendingGps.district=d.long_name.replace(/ District$/i,"");if(s)pendingGps.state=s.long_name;
+      }catch(e){console.warn(e);}
+    }
+    if(!pendingGps.district){
+      try{
+        const r=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+        const j=await r.json();
+        if(j.city||j.locality)pendingGps.district=j.city||j.locality;
+        if(j.principalSubdivision)pendingGps.state=j.principalSubdivision;
+      }catch(e){console.warn(e);}
+    }
+    renderAttach();toast(t("gpsOk"));
+  },()=>toast(t("gpsFail")),{enableHighAccuracy:true,timeout:10000});
+}
+async function submitReport(){
+  const text=$("txt").value.trim();
+  if(!text&&!photoData&&!audioData)return toast(t("needInput"));
+  $("result").classList.remove("hidden");
+  $("result").innerHTML=`<div class="card p-6 flex items-center gap-3"><span class="spin inline-block text-xl">⏳</span><span class="text-sm font-semibold">${t("analyzing")}</span></div>`;
+  $("submit-btn").disabled=true;
+  let a;
+  try{a=await analyzeAI(text);}
+  catch(e){console.warn(e);a=heuristicAnalyze(text,selectedCat);a._offline=true;}
+  const cat=CATS[a.category]?a.category:(selectedCat||"water");
+  const r={id:"r-"+Date.now()+"-"+Math.floor(Math.random()*999),originalText:a.originalText||text,lang:a.lang||LANG,english:a.english||"",local:a.local||"",category:cat,urgency:["low","medium","high","critical"].includes(a.urgency)?a.urgency:"medium",urgencyReason:a.urgencyReason||"",district:a.district||"Sitapur",state:a.state||DISTRICTS[a.district]?.s||"",lat:a.lat||DISTRICTS[a.district]?.lat,lng:a.lng||DISTRICTS[a.district]?.lng,sentiment:a.sentiment||"negative",photoNote:a.photoNote||"",photo:photoThumb||null,gps:pendingGps||null,scheme:SCHEMES[cat],ministry:MINISTRIES[cat],status:"received",createdAt:Date.now()};
+  REPORTS.unshift(r);save();pushCloud(r);
+  lastResult=r;renderResult(r);renderRecent();updateHeroStats();
+  $("txt").value="";selectedCat=null;photoData=null;photoThumb=null;audioData=null;pendingGps=null;renderTiles();renderAttach();
+  $("submit-btn").disabled=false;
+}
+function renderResult(r){
+  const c=CATS[r.category]||CATS.water,u=t("urg")[r.urgency]||r.urgency.toUpperCase();
+  const ucolor=r.urgency==="critical"?"#B91C1C":r.urgency==="high"?"#E58A26":r.urgency==="medium"?"#CA8A04":"#287A53";
+  const shown=LANG==="en"?(r.english||r.originalText):(r.local||r.english||r.originalText);
+  $("result").classList.remove("hidden");
+  $("result").innerHTML=`
+  <div class="card p-6 fade-in border-t-4" style="border-top-color:${c.c}">
+    <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+      <h2 class="font-bold">✅ ${t("resTitle")}</h2>
+      <span class="chip" style="background:${c.c}22;color:${c.c}">${c.i} ${c.n}</span>
+    </div>
+    <div class="rounded-xl p-4 mb-3" style="background:${ucolor}14;border:1px solid ${ucolor}55">
+      <div class="text-xs font-semibold text-[#536273]">${t("urgLabel")}</div>
+      <div class="text-2xl font-extrabold" style="color:${ucolor}">${u}</div>
+      ${r.urgencyReason?`<div class="text-sm text-[#536273] mt-1">${esc(r.urgencyReason)}</div>`:""}
+    </div>
+    <p class="text-sm mb-2">${esc(shown)}</p>
+    ${r.originalText&&shown!==r.originalText?`<p class="text-xs text-[#536273] mb-3">“${esc(r.originalText)}”</p>`:""}
+    <p class="text-xs text-[#536273]">📍 ${t("locLabel")}: <b>${esc(r.district)}</b>, ${esc(r.state)}</p>
+    <p class="text-xs text-[#536273]">🏛️ ${t("schemeLabel")}: <b>${esc(r.scheme)}</b> · ${esc(r.ministry)}</p>
+    ${r.photoNote?`<p class="text-xs text-[#536273] mt-1">📷 ${t("photoNote")}: ${esc(r.photoNote)}</p>`:""}
+    ${r.photo?`<img src="${r.photo}" class="mt-3 rounded-xl max-h-40 object-cover">`:""}
+    <div class="flex flex-wrap gap-2 mt-4">
+      <button onclick="speakReport()" class="btn btn-outline">🔊 ${t("btnListen")}</button>
+      <button onclick="shareWA()" class="btn btn-outline">📤 ${t("btnShare")}</button>
+    </div>
+  </div>`;
+}
+function speakReport(){if(!lastResult)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance([lastResult.local||lastResult.english||lastResult.originalText,lastResult.urgencyReason].filter(Boolean).join(". "));u.lang=LANGVOICE[LANG]||"en-IN";speechSynthesis.speak(u);}catch{}}
+function shareWA(){
+  if(!lastResult)return;
+  const msg=`${t("resTitle")} — SevaSetu\n${lastResult.local||lastResult.english||lastResult.originalText}\n${t("urgLabel")}: ${t("urg")[lastResult.urgency]}\n📍 ${lastResult.district}, ${lastResult.state}\n🏛️ ${lastResult.scheme}`;
+  window.open("https://wa.me/?text="+encodeURIComponent(msg),"_blank");
+}
+const STATUSES=["received","acknowledged","in_progress","resolved"];
+const STATKEY={received:"statusReceived",acknowledged:"statusAck",in_progress:"statusProgress",resolved:"statusResolved"};
+const STATCOLOR={received:"#536273",acknowledged:"#2563EB",in_progress:"#CA8A04",resolved:"#287A53"};
+function cycleStatus(id){
+  const r=REPORTS.find(x=>x.id===id);if(!r)return;
+  r.status=STATUSES[(STATUSES.indexOf(r.status)+1)%4];save();pushCloud(r);renderRecent();
+  if(view==="policy")renderPolicy();
+}
+function clearFilter(){filterCat=null;renderRecent();}
+function renderRecent(){
+  const box=$("recent");box.innerHTML="";
+  $("filter-clear").classList.toggle("hidden",!filterCat);
+  const list=filterCat?REPORTS.filter(r=>r.category===filterCat):REPORTS;
+  if(!list.length){box.innerHTML=`<p class="text-sm text-[#536273]">${t("noReports")}</p>`;return;}
+  list.slice(0,40).forEach(r=>{
+    const c=CATS[r.category]||CATS.water;
+    const d=document.createElement("div");
+    d.className="rounded-xl border border-[#D9E0E7] p-3 fade-in";
+    d.style.borderLeft="4px solid "+c.c;
+    d.innerHTML=`
+      <div class="flex items-center justify-between gap-2 flex-wrap mb-1">
+        <button onclick="filterCat='${r.category}';renderRecent()" class="chip" style="background:${c.c}22;color:${c.c}">${c.i} ${c.n}</button>
+        <span class="text-[11px] text-[#536273]">📍 ${esc(r.district)} · ${timeAgo(r.createdAt||Date.now())}${r.photo?" · 📷":""}</span>
+      </div>
+      <p class="text-sm clamp2 mb-2">${esc((LANG==="en"?(r.english||r.originalText):(r.local||r.english||r.originalText))||r.originalText)}</p>
+      <button onclick="cycleStatus('${r.id}')" class="chip" style="background:${STATCOLOR[r.status]}22;color:${STATCOLOR[r.status]}">● ${t(STATKEY[r.status])}</button>`;
+    box.appendChild(d);
+  });
+}
+
+/* ================= DASHBOARD ================= */
+function aggregates(){
+  const by={};
+  REPORTS.forEach(r=>{
+    const dd=DISTRICTS[r.district]||{};
+    const k=r.district||"Unknown";
+    by[k]=by[k]||{district:k,state:r.state||dd.s||"",lat:r.lat||dd.lat,lng:r.lng||dd.lng,pop:dd.p||10,vol:0,urgent:0,mom:0,cats:{}};
+    const a=by[k];a.vol++;
+    if(r.urgency==="high"||r.urgency==="critical")a.urgent++;
+    if(Date.now()-(r.createdAt||0)<864e5)a.mom++;
+    a.cats[r.category]=(a.cats[r.category]||0)+1;
+  });
+  const list=Object.values(by),maxVol=Math.max(1,...list.map(a=>a.vol));
+  list.forEach(a=>{
+    a.urgShare=a.vol?a.urgent/a.vol:0;
+    const deficit=STATE_DEFICIT[a.state]||55;
+    a.topCat=Object.entries(a.cats).sort((x,y)=>y[1]-x[1])[0]?.[0]||"water";
+    a.score=Math.round(100*(0.4*(a.vol/maxVol)+0.2*a.urgShare+0.2*(deficit/100)+0.1*Math.min(1,a.mom/3)+0.1*Math.min(1,(a.pop||10)/40)));
+  });
+  return list.sort((x,y)=>y.score-x.score);
+}
+function renderPolicy(){
+  const ag=aggregates();
+  $("kpi-total").textContent=REPORTS.length;
+  $("kpi-urgent").textContent=REPORTS.filter(r=>r.urgency==="high"||r.urgency==="critical").length;
+  $("kpi-districts").textContent=new Set(REPORTS.map(r=>r.district)).size;
+  $("kpi-langs").textContent=new Set(REPORTS.map(r=>r.lang)).size;
+  $("kpi-resolved").textContent=REPORTS.filter(r=>r.status==="resolved").length;
+  const tb=$("prio-body");tb.innerHTML="";
+  ag.slice(0,12).forEach(a=>{
+    const c=CATS[a.topCat]||CATS.water;
+    const tr=document.createElement("tr");tr.className="border-b border-[#D9E0E7]";
+    tr.innerHTML=`<td class="py-2 pr-3 font-semibold">${esc(a.district)}</td>
+      <td class="py-2 pr-3 text-[#536273]">${esc(a.state)}</td>
+      <td class="py-2 pr-3"><span class="chip" style="background:${c.c}22;color:${c.c}">${c.i} ${c.n}</span></td>
+      <td class="py-2 pr-3">${a.vol}</td>
+      <td class="py-2 pr-3">${Math.round(a.urgShare*100)}%</td>
+      <td class="py-2"><div class="flex items-center gap-2"><b>${a.score}</b><div style="height:6px;width:90px;background:#EEF3F8;border-radius:4px"><div style="height:6px;width:${a.score}%;background:#E58A26;border-radius:4px"></div></div></div></td>`;
+    tb.appendChild(tr);
+  });
+  renderMap();
+  if(getKey()&&!aiCache.brief)generateAI();
+  renderAI();
+}
+async function generateAI(){
+  if(aiBusy||!getKey())return;aiBusy=true;
+  const ag=aggregates().slice(0,10).map(a=>({district:a.district,state:a.state,requests:a.vol,urgentPct:Math.round(a.urgShare*100),topDemand:a.topCat,score:a.score,populationLakh:a.pop}));
+  try{
+    const out=await geminiJSON([{text:`You are a national development planner AI for India. Based on district demand aggregates, recommend the top 5 development projects and write an executive brief. Write ALL text (titles, rationale, KPIs, brief) in ${LANGS[LANG]}.
+Return ONLY JSON: {"projects":[{"district","state","title","category","scheme","budget","rationale","kpis":[3 short strings]}],"brief":"3-4 sentence executive brief for national policymakers"}
+Use real Indian schemes (Jal Jeevan Mission, PMGSY-IV, Ayushman Bharat, Samagra Shiksha, Swachh Bharat Mission, PM Awas Yojana, BharatNet, RDSS, PM-KISAN, Flood Management Programme). Budget as e.g. "₹ 120 Cr".
+Data: ${JSON.stringify(ag)}`}]);
+    if(out&&Array.isArray(out.projects)){aiCache={brief:out.brief||"",projects:out.projects};}
+  }catch(e){console.warn("AI:",e);aiCache._err=String(e.message||e);}
+  aiBusy=false;renderAI();
+}
+function heuristicAI(){
+  const ag=aggregates().slice(0,5);
+  return{
+    projects:ag.map(a=>{const c=CATS[a.topCat]||CATS.water;return{district:a.district,state:a.state,title:`${c.n} infrastructure upgrade — ${a.district}`,category:a.topCat,scheme:SCHEMES[a.topCat],budget:`₹ ${Math.max(15,Math.round(a.vol*12+a.score))} Cr`,rationale:`Priority score ${a.score}: ${a.vol} requests, ${Math.round(a.urgShare*100)}% urgent, top demand ${c.n}.`,kpis:[`Serve ~${Math.round((a.pop||10)*0.35)} lakh residents`,`Reduce urgent complaints 50% in 12 months`,`Monthly progress dashboard`]};}),
+    brief:ag.length?`Top priority: ${ag[0].district} (${ag[0].state}) with score ${ag[0].score}, driven by ${ag[0].vol} citizen requests and ${Math.round(ag[0].urgShare*100)}% urgent share in ${CATS[ag[0].topCat]?.n}. ${ag.length>1?`Next: ${ag.slice(1).map(a=>a.district).join(", ")}.`:""} ${t("briefLocal")}`:t("briefLocal")
+  };
+}
+function renderAI(){
+  const has=aiCache.projects&&aiCache.projects.length,data=has?aiCache:heuristicAI();
+  const box=$("projects");box.innerHTML="";
+  data.projects.forEach(p=>{
+    const c=CATS[p.category]||CATS.water;
+    const d=document.createElement("div");d.className="rounded-xl border border-[#D9E0E7] p-4";
+    d.style.borderLeft="4px solid "+c.c;
+    d.innerHTML=`<div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+        <span class="font-bold text-sm">${esc(p.title)}</span><span class="chip" style="background:${c.c}22;color:${c.c}">${c.i}</span></div>
+      <div class="text-xs text-[#536273] mb-2">📍 ${esc(p.district)}, ${esc(p.state)} · 🏛️ <b>${esc(p.scheme||SCHEMES[p.category]||"")}</b> · 💰 <b>${esc(p.budget||"")}</b></div>
+      <p class="text-xs text-[#536273] mb-2">${esc(p.rationale||"")}</p>
+      <div class="flex flex-wrap gap-1">${(p.kpis||[]).map(k=>`<span class="chip bg-[#EEF3F8] text-[#17324D]">✔ ${esc(k)}</span>`).join("")}</div>`;
+    box.appendChild(d);
+  });
+  $("brief").textContent=data.brief||t("briefLocal");
+}
+function refreshAI(){aiCache={};renderPolicy();}
+
+/* ================= MAP (Google -> Esri/Leaflet fallback) ================= */
+const ESRI_STREET="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}";
+const ESRI_IMAGERY="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const ESRI_LABELS="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
+let mapStyle="map";
+function mapColor(u){return u>0.5?"#DC2626":u>0.25?"#E58A26":"#287A53";}
+function renderMap(){
+  const ag=aggregates();
+  if(getMapsKey()&&!window.__gmFailed){loadGoogle(()=>drawGoogle(ag));}
+  else{drawLeaflet(ag);}
+}
+function loadGoogle(cb){
+  if(window.google&&window.google.maps)return cb();
+  window.gm_authFailure=()=>{window.__gmFailed=true;drawLeaflet(aggregates());};
+  if(window.__gmLoading){window.__gmCbs.push(cb);return;}
+  window.__gmLoading=true;window.__gmCbs=[cb];
+  const s=document.createElement("script");
+  s.src=`https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(getMapsKey())}&v=weekly&callback=__gmReady`;
+  s.onerror=()=>{window.__gmFailed=true;drawLeaflet(aggregates());};
+  window.__gmReady=()=>{window.__gmLoading=false;window.__gmCbs.forEach(f=>{try{f();}catch(e){console.warn(e);}});};
+  document.head.appendChild(s);
+}
+function drawGoogle(ag){
+  $("map-google").classList.remove("hidden");$("map-leaflet").classList.add("hidden");
+  if(!gmap)gmap=new google.maps.Map($("map-google"),{center:{lat:22.9,lng:79.5},zoom:5,mapTypeControl:false,streetViewControl:false,fullscreenControl:false});
+  gmap.setMapTypeId(mapStyle==="satellite"?"hybrid":"roadmap");
+  gmarkers.forEach(m=>m.setMap(null));gmarkers=[];ginfo=ginfo||new google.maps.InfoWindow();
+  ag.forEach(a=>{
+    const color=mapColor(a.urgShare),radius=Math.min(60000,15000+a.vol*3500);
+    const m=new google.maps.Circle({center:{lat:a.lat,lng:a.lng},radius,map:gmap,fillColor:color,fillOpacity:.35,strokeColor:color,strokeWeight:1.5});
+    const c=CATS[a.topCat]||CATS.water;
+    m.addListener("click",()=>{ginfo.setContent(`<div style="font-family:inherit"><b>${esc(a.district)}</b>, ${esc(a.state)}<br>${a.vol} requests · ${Math.round(a.urgShare*100)}% urgent<br>Top: ${c.i} ${c.n}<br>Score: <b>${a.score}</b></div>`);ginfo.setPosition({lat:a.lat,lng:a.lng});ginfo.open(gmap);});
+    gmarkers.push(m);
+  });
+}
+function drawLeaflet(ag){
+  $("map-leaflet").classList.remove("hidden");$("map-google").classList.add("hidden");
+  if(!lmap){
+    lmap=L.map("map-leaflet",{center:[22.9,79.5],zoom:5,scrollWheelZoom:true});
+    lStreet=L.tileLayer(ESRI_STREET,{attribution:"Tiles © Esri, Maxar, Earthstar Geographics"});
+    lSat=L.layerGroup([
+      L.tileLayer(ESRI_IMAGERY,{attribution:"Tiles © Esri, Maxar, Earthstar Geographics"}),
+      L.tileLayer(ESRI_LABELS,{attribution:"Labels © Esri"})
+    ]);
+    llayer=L.layerGroup().addTo(lmap);
+    (mapStyle==="satellite"?lSat:lStreet).addTo(lmap);
+  }
+  llayer.clearLayers();
+  ag.forEach(a=>{
+    const color=mapColor(a.urgShare),r=7+Math.min(18,a.vol*2);
+    const c=CATS[a.topCat]||CATS.water;
+    L.circleMarker([a.lat,a.lng],{radius:r,color,fillColor:color,fillOpacity:.45,weight:1.5})
+      .bindPopup(`<b>${esc(a.district)}</b>, ${esc(a.state)}<br>${a.vol} requests · ${Math.round(a.urgShare*100)}% urgent<br>Top: ${c.i} ${c.n}<br>Score: <b>${a.score}</b>`)
+      .addTo(llayer);
+  });
+}
+function setMapStyle(s){
+  mapStyle=s;
+  $("ms-map").classList.toggle("bg-[#EEF3F8]",s==="map");$("ms-sat").classList.toggle("bg-[#EEF3F8]",s==="satellite");
+  if(gmap)gmap.setMapTypeId(s==="satellite"?"hybrid":"roadmap");
+  if(lmap){if(s==="satellite"){if(lmap.hasLayer(lStreet))lmap.removeLayer(lStreet);lSat.addTo(lmap);}else{if(lmap.hasLayer(lSat))lmap.removeLayer(lSat);lStreet.addTo(lmap);}}
+}
+
+/* ================= ACTIONS ================= */
+function switchView(v){
+  view=v;
+  $("view-citizen").classList.toggle("hidden",v!=="citizen");
+  $("view-policy").classList.toggle("hidden",v!=="policy");
+  $("tab-citizen").className="btn "+(v==="citizen"?"tab-on":"tab-off");
+  $("tab-policy").className="btn "+(v==="policy"?"tab-on":"tab-off");
+  location.hash=v==="policy"?"#/policy":"";
+  if(v==="policy"){renderPolicy();setTimeout(()=>{if(lmap)lmap.invalidateSize();},200);}
+}
+function simulate(){
+  const picks=SEED.slice().sort(()=>Math.random()-0.5).slice(0,3);
+  picks.forEach((s,i)=>{
+    const d=s[4];
+    REPORTS.unshift({id:"sim-"+Date.now()+"-"+i,originalText:s[0],lang:s[1],english:"",local:"",category:s[2],urgency:s[3],urgencyReason:"Simulated live report.",district:d,state:DISTRICTS[d]?.s||"",lat:DISTRICTS[d]?.lat,lng:DISTRICTS[d]?.lng,sentiment:"negative",photoNote:"",photo:null,gps:null,scheme:SCHEMES[s[2]],ministry:MINISTRIES[s[2]],status:"received",createdAt:Date.now()});
+  });
+  save();REPORTS.slice(0,3).forEach(pushCloud);renderRecent();updateHeroStats();if(view==="policy")renderPolicy();
+}
+function resetData(){REPORTS=seedReports();save();aiCache={};renderRecent();updateHeroStats();if(view==="policy")renderPolicy();toast("Demo data reset.");}
+
+/* ================= SETTINGS ================= */
+function openSettings(){
+  const c=cfg();
+  $("set-gemini").value=c.gemini||"";$("set-maps").value=c.maps||"";
+  const f=c.fb||{};
+  $("set-fb-apikey").value=f.apiKey||"";$("set-fb-authdomain").value=f.authDomain||"";$("set-fb-projectid").value=f.projectId||"";
+  $("set-fb-storage").value=f.storageBucket||"";$("set-fb-sender").value=f.messagingSenderId||"";$("set-fb-appid").value=f.appId||"";
+  $("settings").classList.remove("hidden");
+}
+function closeSettings(){$("settings").classList.add("hidden");}
+async function saveSettings(){
+  const c=cfg();
+  c.gemini=$("set-gemini").value.trim();
+  c.maps=$("set-maps").value.trim();
+  const f={apiKey:$("set-fb-apikey").value.trim(),authDomain:$("set-fb-authdomain").value.trim(),projectId:$("set-fb-projectid").value.trim(),storageBucket:$("set-fb-storage").value.trim(),messagingSenderId:$("set-fb-sender").value.trim(),appId:$("set-fb-appid").value.trim()};
+  c.fb=(f.projectId&&f.apiKey)?f:null;
+  localStorage.setItem(LS_CFG,JSON.stringify(c));
+  updateBanner();closeSettings();
+  if(c.fb){$("fb-badge").classList.add("hidden");await initFirebase();}
+  if(getKey()){aiCache={};if(view==="policy")renderPolicy();}
+  if(view==="policy"){window.__gmFailed=false;renderMap();}
+  toast("Settings saved.");
+}
+function updateBanner(){$("key-banner").classList.toggle("hidden",!!getKey());}
+
+/* ================= INIT ================= */
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSettings();});
+(function init(){
+  REPORTS=load();
+  renderTiles();renderAttach();applyLang();updateBanner();renderRecent();updateHeroStats();
+  if(getFB())initFirebase();
+  if(location.hash==="#/policy")switchView("policy");
+})();
+</script>
+</body>
+</html>
