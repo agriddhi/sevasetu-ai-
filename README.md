@@ -10,7 +10,7 @@ dashboard of community priorities to guide public investment.**
 
 🔗 **Live demo:** https://sevasetu-ai-yeke.onrender.com/
 📹 **Demo video:** https://drive.google.com/file/d/1-KKQkeGR6X5em794AObSJn-Pn1jB1D4X/view?usp=sharing
-📊 **Pitch deck:** attached 
+📊 **Pitch deck:** https://github.com/agriddhi/sevasetu-ai-/blob/main/SevaSetu%20%E2%80%94%20Pitch%20Deck.pdf
 
 ---
 
