@@ -9,8 +9,8 @@ dashboard of community priorities to guide public investment.**
 > A Digital Public Good prototype — designed to scale across every state from one codebase.
 
 🔗 **Live demo:** https://sevasetu-ai-yeke.onrender.com/
-📹 **Demo video:** [add your YouTube/Drive link here]
-📊 **Pitch deck:** [add your deck link here]
+📹 **Demo video:** https://drive.google.com/file/d/1-KKQkeGR6X5em794AObSJn-Pn1jB1D4X/view?usp=sharing
+📊 **Pitch deck:** attached 
 
 ---
 
