@@ -1,5 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+<script>
+(function () {
+  var KEY = "sevasetu_cfg_v2";
+  try {
+    if (!localStorage.getItem(KEY)) {
+      localStorage.setItem(KEY, JSON.stringify({
+        gemini: "AQ.Ab8RN6JdtObYAIwSiNk3I__mZ-TPqb_kBc3FFpiLZ_8Q7QMavQ",
+        maps: "AIzaSyA5JNotfauhYO-6et54vivqL9BVHpz_6QU",
+        fb: {
+          apiKey: "AIzaSyBcX51SYPzxlXvMYzvqq714lPA2Netgmq8",
+          authDomain: "sevasetu-ai-9b815.firebaseapp.com",
+          projectId: "sevasetu-ai-9b815",
+          storageBucket: "sevasetu-ai-9b815.firebasestorage.app",
+          messagingSenderId: "536395564687",
+          appId: "1:536395564687:web:f0d43663988a73971192fa"
+        }
+      }));
+    }
+  } catch (e) {}
+})();
+</script>
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
